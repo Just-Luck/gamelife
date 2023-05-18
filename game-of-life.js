@@ -15,8 +15,8 @@
 
     // DOM elements
     element: {
-      generation: null,
-      livecells: null,
+      generation: 0,
+      livecells: 0,
     },
     colors: {
       dead: "#65799B",
@@ -24,24 +24,27 @@
       grid: "#555273",
     },
 
+    //Инициализации игры
     init: function () {
       try {
-        this.loadState(); // Load state from URL
-        this.keepDOMElements(); // Keep DOM References (getElementsById)
-        this.canvas.init(); // Init canvas GUI
-        this.registerEvents(); // Register event handlers
+        this.loadState();
+        this.keepDOMElements();
+        this.canvas.init();
+        this.registerEvents();
         this.prepare();
       } catch (e) {
         alert("Error: " + e);
       }
     },
 
+    //Начальное состояние игры
     loadState: function () {
       var s = this.helpers.getUrlParameter("s");
       if (s === "random") this.randomState();
       else s = this.initialState;
     },
 
+    //Генератор рандомного поля
     randomState: function () {
       var i,
         liveCells = this.rows * this.columns * 0.2;
@@ -57,11 +60,13 @@
       this.listLife.nextGeneration();
     },
 
+    //Очистка поля
     cleanUp: function () {
       this.listLife.init();
       this.prepare();
     },
 
+    //Сброс счетчиков и отрисовка пустого поля
     prepare: function () {
       this.generation = 0;
       this.mouseDown = this.clear = false;
@@ -73,11 +78,13 @@
       this.canvas.drawWorld(); // Draw State
     },
 
+    //Ссылки на динамические элементы
     keepDOMElements: function () {
       this.element.generation = document.getElementById("generation");
       this.element.livecells = document.getElementById("livecells");
     },
 
+    //Получение нажатий кнопок
     registerEvents: function () {
       this.helpers.registerEvent(
         document.getElementById("buttonRun"),
@@ -100,48 +107,48 @@
     },
 
     nextStep: function () {
-      var i, x, y, r, liveCellNumber;
+      var i, x, y, liveCellNumber;
 
-      // Algorithm run
+      //+1 поколение
       liveCellNumber = this.listLife.nextGeneration();
 
-      // Canvas run
-
+      //Перерисовываем клетки
       for (i = 0; i < this.listLife.redrawList.length; i++) {
         x = this.listLife.redrawList[i][0];
         y = this.listLife.redrawList[i][1];
 
         if (this.listLife.redrawList[i][2] === 1) {
-          this.canvas.changeCelltoAlive(x, y);
+          this.canvas.changeCelltoAlive(x, y); //Оживляем клетку
         } else if (this.listLife.redrawList[i][2] === 2) {
-          this.canvas.keepCellAlive(x, y);
+          this.canvas.keepCellAlive(x, y); //Остается жить
         } else {
-          this.canvas.changeCelltoDead(x, y);
+          this.canvas.changeCelltoDead(x, y); //Клетка умерла
         }
       }
 
-      // Running Information
+      // Обновляем информацию
       this.generation++;
       this.element.generation.innerHTML = this.generation;
       this.element.livecells.innerHTML = liveCellNumber;
 
-      // Flow Control
+      // Запуск следующего шага
       if (this.running) {
         setTimeout(function () {
           GOL.nextStep();
-        }, 0);
+        }, 10);
       } else {
         if (this.clear) {
-          this.cleanUp();
+          this.cleanUp(); //Очищаем поле
         }
       }
     },
 
+    //Функции после нажатия на кнопки и действия с мышкой
     handlers: {
+      //************************************************************//
       mouseDown: false,
       lastX: 0,
       lastY: 0,
-
       canvasMouseDown: function (event) {
         var position = GOL.helpers.mousePosition(event);
         GOL.canvas.switchCell(position[0], position[1]);
@@ -153,7 +160,7 @@
       canvasMouseUp: function () {
         GOL.handlers.mouseDown = false;
       },
-
+      //************************************************************//
       buttons: {
         run: function () {
           GOL.running = !GOL.running;
@@ -192,6 +199,7 @@
       cellSpace: null,
 
       init: function () {
+        //Инициализация холста
         this.canvas = document.getElementById("canvas");
         this.context = this.canvas.getContext("2d");
 
@@ -215,18 +223,20 @@
       },
 
       clearWorld: function () {
+        //Очищает холст
         var i, j;
 
         this.age = [];
         for (i = 0; i < GOL.columns; i++) {
           this.age[i] = [];
           for (j = 0; j < GOL.rows; j++) {
-            this.age[i][j] = 0; // Dead
+            this.age[i][j] = 0; // Все клетки мертвы
           }
         }
       },
 
       drawWorld: function () {
+        //Отрисовывает весь холст
         var i, j;
         this.width = this.cellSpace * GOL.columns + this.cellSize * GOL.columns;
 
@@ -236,7 +246,6 @@
           this.height + this.cellSpace * GOL.rows + this.cellSize * GOL.rows;
         this.height = this.canvas.getAttribute("height");
 
-        // Fill background
         this.context.fillStyle = GOL.colors.grid;
         this.context.fillRect(0, 0, this.width, this.height);
 
@@ -252,6 +261,7 @@
       },
 
       drawCell: function (i, j, alive) {
+        //Отрисовывает одну клетку на холсте
         if (alive) {
           if (this.age[i][j] > -1) this.context.fillStyle = GOL.colors.alive;
         } else {
@@ -267,6 +277,7 @@
       },
 
       switchCell: function (i, j) {
+        //Переключить состояние с живой на мертвую
         if (GOL.listLife.isAlive(i, j)) {
           this.changeCelltoDead(i, j);
           GOL.listLife.removeCell(i, j, GOL.listLife.actualState);
@@ -277,6 +288,7 @@
       },
 
       keepCellAlive: function (i, j) {
+        //Клетка продолжает жить
         if (i >= 0 && i < GOL.columns && j >= 0 && j < GOL.rows) {
           this.age[i][j]++;
           this.drawCell(i, j, true);
@@ -284,6 +296,7 @@
       },
 
       changeCelltoAlive: function (i, j) {
+        //Рождение клетки
         if (i >= 0 && i < GOL.columns && j >= 0 && j < GOL.rows) {
           this.age[i][j] = 1;
           this.drawCell(i, j, true);
@@ -291,8 +304,9 @@
       },
 
       changeCelltoDead: function (i, j) {
+        //Клетка умирает
         if (i >= 0 && i < GOL.columns && j >= 0 && j < GOL.rows) {
-          this.age[i][j] = -this.age[i][j]; // Keep trail
+          this.age[i][j] = -this.age[i][j];
           this.drawCell(i, j, false);
         }
       },
@@ -312,7 +326,6 @@
           i,
           j,
           m,
-          n,
           key,
           t1,
           t2,
@@ -331,7 +344,7 @@
             x = this.actualState[i][j];
             y = this.actualState[i][0];
 
-            // Possible dead neighbours
+            // Потенциально мертвые клетки
             deadNeighbours = [
               [x - 1, y - 1, 1],
               [x, y - 1, 1],
@@ -343,9 +356,7 @@
               [x + 1, y + 1, 1],
             ];
 
-            neighbours = this.getNeighboursFromAlive(x, y, i, deadNeighbours);
-
-            // Join dead neighbours to check list
+            neighbours = this.getNeighboursFromAlive(x, y, i, deadNeighbours); //Получаем кол-во живых соседей
             for (m = 0; m < 8; m++) {
               if (deadNeighbours[m] !== undefined) {
                 key = deadNeighbours[m][0] + "," + deadNeighbours[m][1];
@@ -392,7 +403,7 @@
         var neighbours = 0,
           k;
 
-        // Top
+        // Проверка верхних клеток
         if (this.actualState[i - 1] !== undefined) {
           if (this.actualState[i - 1][0] === y - 1) {
             for (k = this.topPointer; k < this.actualState[i - 1].length; k++) {
@@ -429,7 +440,7 @@
           }
         }
 
-        // Middle
+        // Проверка средних соседей
         for (k = 1; k < this.actualState[i].length; k++) {
           if (this.actualState[i][k] >= x - 1) {
             if (this.actualState[i][k] === x - 1) {
@@ -448,7 +459,7 @@
           }
         }
 
-        // Bottom
+        // Проверка снизу
         if (
           this.actualState[i + 1] !== undefined &&
           this.actualState[i + 1][0] === y + 1
@@ -605,6 +616,7 @@
           : null;
       },
       getUrlParameter: function (name) {
+        //Получаем параметры перехода
         if (this.urlParameters === null) {
           var hash, hashes, i;
 
@@ -624,6 +636,7 @@
       },
 
       registerEvent: function (element, event, handler, capture) {
+        //Регистрируем события
         if (/msie/i.test(navigator.userAgent)) {
           element.attachEvent("on" + event, handler);
         } else {
